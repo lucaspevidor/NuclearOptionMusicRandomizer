@@ -9,14 +9,16 @@ namespace MusicRandomizer.Patches
         private static bool Prepare()
         {
             bool hasMethod = AccessTools.Method(typeof(MusicManager), nameof(MusicManager.CrossFadeMusic)) != null;
+            bool hasCurrentSource = AccessTools.Field(typeof(MusicManager), "currentSource") != null;
             bool hasFadeSource = AccessTools.Field(typeof(MusicManager), "fadeSource") != null;
-            bool hasIsFading = AccessTools.Field(typeof(MusicManager), "isFading") != null;
+            bool hasCurrentPriority = AccessTools.Field(typeof(MusicManager), "currentClipPriority") != null;
 
-            if (!hasMethod || !hasFadeSource || !hasIsFading)
+            if (!hasMethod || !hasCurrentSource || !hasFadeSource || !hasCurrentPriority)
             {
                 Plugin.Log?.LogError(
                     $"Incompatible game build: MusicManager.CrossFadeMusic found={hasMethod}, "
-                    + $"field 'fadeSource' found={hasFadeSource}, field 'isFading' found={hasIsFading}. Patch skipped.");
+                    + $"field 'currentSource' found={hasCurrentSource}, field 'fadeSource' found={hasFadeSource}, "
+                    + $"field 'currentClipPriority' found={hasCurrentPriority}. Patch skipped.");
                 return false;
             }
 
@@ -28,7 +30,8 @@ namespace MusicRandomizer.Patches
             MusicManager __instance,
             ref AudioClip audioClip,
             ref bool allowReplay,
-            ref bool replacePlaying)
+            ref bool replacePlaying,
+            ref float priority)
         {
             if (!TakeoffMusicContext.IsActive || !ModConfig.Enabled.Value || audioClip == null)
             {
@@ -39,7 +42,7 @@ namespace MusicRandomizer.Patches
             float now = Time.realtimeSinceStartup;
             if (MusicPlaybackState.Refresh(__instance, now))
             {
-                Plugin.Log?.LogInfo("Takeoff music skipped because music is already playing.");
+                Plugin.Log?.LogInfo("Takeoff music skipped because an aircraft song is already playing.");
                 return false;
             }
 
@@ -54,8 +57,14 @@ namespace MusicRandomizer.Patches
                 audioClip = TakeoffMusicPool.PickRandom(audioClip);
             }
 
+            TakeoffMusicPool.Register(audioClip);
             allowReplay = true;
-            replacePlaying = false;
+            replacePlaying = true;
+            if (MusicPlaybackState.IsAnyMusicActive(__instance))
+            {
+                priority = Mathf.Max(priority, MusicPlaybackState.GetCurrentPriority(__instance));
+            }
+
             Plugin.Log?.LogInfo($"Playing takeoff music '{audioClip.name}'.");
             return true;
         }

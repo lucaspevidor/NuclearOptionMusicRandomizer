@@ -29,7 +29,7 @@ namespace MusicRandomizer
                 "CooldownSeconds",
                 60f,
                 new ConfigDescription(
-                    "Minimum time after any music ends before takeoff music may start.",
+                    "Minimum time after an aircraft song ends before another one may start.",
                     new AcceptableValueRange<float>(0f, 600f)));
         }
     }

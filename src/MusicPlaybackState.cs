@@ -5,9 +5,10 @@ namespace MusicRandomizer
 {
     internal static class MusicPlaybackState
     {
+        private static AccessTools.FieldRef<MusicManager, AudioSource> _currentSource;
         private static AccessTools.FieldRef<MusicManager, AudioSource> _fadeSource;
-        private static AccessTools.FieldRef<MusicManager, bool> _isFading;
-        private static bool _wasActive;
+        private static AccessTools.FieldRef<MusicManager, float> _currentClipPriority;
+        private static bool _wasAircraftMusicActive;
         private static bool _hasEnded;
         private static float _lastEndedAt;
 
@@ -17,8 +18,9 @@ namespace MusicRandomizer
 
         public static void Initialize()
         {
+            _currentSource = AccessTools.FieldRefAccess<MusicManager, AudioSource>("currentSource");
             _fadeSource = AccessTools.FieldRefAccess<MusicManager, AudioSource>("fadeSource");
-            _isFading = AccessTools.FieldRefAccess<MusicManager, bool>("isFading");
+            _currentClipPriority = AccessTools.FieldRefAccess<MusicManager, float>("currentClipPriority");
             IsInitialized = true;
         }
 
@@ -29,15 +31,25 @@ namespace MusicRandomizer
 
         public static bool Refresh(MusicManager manager, float now)
         {
-            bool active = IsActive(manager);
-            if (_wasActive && !active)
+            bool active = IsAircraftMusicActive(manager);
+            if (_wasAircraftMusicActive && !active)
             {
                 _hasEnded = true;
                 _lastEndedAt = now;
             }
 
-            _wasActive = active;
+            _wasAircraftMusicActive = active;
             return active;
+        }
+
+        public static bool IsAnyMusicActive(MusicManager manager)
+        {
+            return IsPlaying(_currentSource(manager)) || IsPlaying(_fadeSource(manager));
+        }
+
+        public static float GetCurrentPriority(MusicManager manager)
+        {
+            return _currentClipPriority(manager);
         }
 
         public static bool IsCooldownComplete(float now, float cooldownSeconds)
@@ -45,10 +57,19 @@ namespace MusicRandomizer
             return !_hasEnded || now - _lastEndedAt >= Mathf.Max(0f, cooldownSeconds);
         }
 
-        private static bool IsActive(MusicManager manager)
+        private static bool IsAircraftMusicActive(MusicManager manager)
         {
-            AudioSource fadeSource = _fadeSource(manager);
-            return manager.IsPlaying() || _isFading(manager) || (fadeSource != null && fadeSource.isPlaying);
+            return IsPlayingAircraftMusic(_currentSource(manager)) || IsPlayingAircraftMusic(_fadeSource(manager));
+        }
+
+        private static bool IsPlayingAircraftMusic(AudioSource source)
+        {
+            return IsPlaying(source) && TakeoffMusicPool.Contains(source.clip);
+        }
+
+        private static bool IsPlaying(AudioSource source)
+        {
+            return source != null && source.isPlaying;
         }
     }
 }

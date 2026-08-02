@@ -1,8 +1,8 @@
 # MusicRandomizer
 
 A BepInEx 5 mod for Nuclear Option that allows aircraft takeoff music to play more than once per
-match. Takeoff music waits while another track is playing and observes a configurable cooldown
-after that track ends.
+match. An aircraft song will not interrupt another aircraft song, and a configurable cooldown
+starts when an aircraft song ends.
 
 By Lucas Pevidor.
 
@@ -12,13 +12,14 @@ The base game assigns one track to each aircraft and records that track as playe
 takeoff. This mod changes takeoff requests so they can replay. By default, it also chooses a random
 track from the aircraft in the game's encyclopedia.
 
-The mod only changes music requested by `Aircraft.CheckRadarAlt`. Tactical and strategic phase
-music, mission results, death music, kill songs, and menu music keep their normal behavior.
+The mod only changes music requested by `Aircraft.CheckRadarAlt`. A takeoff song can replace
+tactical, strategic, mission-result, death, kill-song, or menu music that is currently playing.
+Those events still use their normal game behavior when they start.
 
 A takeoff request is skipped when:
 
-- Any music source is playing or crossfading.
-- Less than the configured cooldown has passed since music stopped.
+- Another aircraft song is playing or crossfading.
+- Less than the configured cooldown has passed since an aircraft song stopped.
 - The aircraft has no takeoff track.
 
 The cooldown uses Unity's real time, so time spent in a pause menu counts toward it.
@@ -31,7 +32,7 @@ The config file is `BepInEx/config/com.lucaspevidor.musicrandomizer.cfg`.
 |---------------|---------|--------|
 | `General / Enabled` | `true` | Enable repeatable takeoff music. Disabling it restores the game's original takeoff behavior. |
 | `General / RandomizeTakeoffMusic` | `true` | Pick from all unique aircraft takeoff tracks. When false, use the current aircraft's track. |
-| `Timing / CooldownSeconds` | `60` | Minimum time after any music ends before takeoff music can start. Range: 0 to 600 seconds. |
+| `Timing / CooldownSeconds` | `60` | Minimum time after an aircraft song ends before another one can start. Range: 0 to 600 seconds. |
 
 Config values are read live. They can be changed through BepInEx Configuration Manager without
 restarting the game.
@@ -60,7 +61,7 @@ Use `BepInEx/LogOutput.log` to confirm these cases in game:
 1. Take off with no music playing. A takeoff track should start.
 2. Land, wait for the track to end and take off before the cooldown expires. No track should start.
 3. Take off after the cooldown. Another track should start.
-4. Take off while tactical or strategic music is playing. That track should continue uninterrupted.
+4. Take off while tactical or strategic music is playing. A takeoff track should replace it.
 5. Disable randomization and confirm the aircraft's assigned track is used.
 6. Disable the mod and confirm the game's original once-per-track behavior returns.
 
