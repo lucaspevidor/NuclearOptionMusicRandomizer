@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>MusicRandomizer</AssemblyName>
+    <Product>MusicRandomizer</Product>
+    <Description>Replays and optionally randomizes aircraft takeoff music in Nuclear Option.</Description>
+    <Authors>Lucas Pevidor</Authors>
+    <Version>0.1.0</Version>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>MusicRandomizer</RootNamespace>
+    <AssemblyTitle>MusicRandomizer</AssemblyTitle>
+
+    <!-- BepInEx packages live on the BepInEx feed, not nuget.org -->
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json
+    </RestoreAdditionalProjectSources>
+
+    <!-- Override with -p:GameDirectory=... on the CLI if your install differs -->
+    <GameDirectory Condition="'$(GameDirectory)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Nuclear Option</GameDirectory>
+    <ManagedDirectory>$(GameDirectory)\NuclearOption_Data\Managed</ManagedDirectory>
+    <PluginDeploymentDirectory>$(GameDirectory)\BepInEx\plugins\MusicRandomizer</PluginDeploymentDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- BepInEx 5 framework (bundles HarmonyX / HarmonyLib) -->
+    <PackageReference Include="BepInEx.Core" Version="5.*" />
+    <!-- Unity API surface, compile-time only. Match the game's Unity minor version. -->
+    <PackageReference Include="UnityEngine.Modules" Version="2022.3.6" IncludeAssets="compile" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Game code we patch. Compile-time only: these ship with the game, never with the mod. -->
+    <Reference Include="Assembly-CSharp" Private="false">
+      <HintPath>$(ManagedDirectory)\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <!-- Aircraft derives from Mirage's NetworkBehaviour, so the base type must resolve. -->
+    <Reference Include="Mirage" Private="false">
+      <HintPath>$(ManagedDirectory)\Mirage.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Copy the built DLL into the game's plugin folder after each build. -->
+  <Target Name="Deploy" AfterTargets="Build" Condition="Exists('$(GameDirectory)')">
+    <MakeDir Directories="$(PluginDeploymentDirectory)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PluginDeploymentDirectory)" />
+    <Copy SourceFiles="$(TargetDir)$(AssemblyName).pdb" DestinationFolder="$(PluginDeploymentDirectory)"
+          Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+    <Message Importance="high" Text="Deployed $(AssemblyName).dll -> $(PluginDeploymentDirectory)" />
+  </Target>
+
+</Project>
