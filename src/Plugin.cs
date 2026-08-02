@@ -2,6 +2,8 @@ using System.Linq;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using MusicRandomizer.Patches;
+using UnityEngine;
 
 namespace MusicRandomizer
 {
@@ -15,10 +17,35 @@ namespace MusicRandomizer
         private void Awake()
         {
             Log = Logger;
-            _harmony.PatchAll();
+            ModConfig.Init(Config);
+            _harmony.PatchAll(typeof(TakeoffMusicContextPatch));
+            _harmony.PatchAll(typeof(TakeoffMusicRequestPatch));
 
             int patched = _harmony.GetPatchedMethods().Count();
-            Log.LogInfo($"{PluginInfo.Name} v{PluginInfo.Version} loaded. Applied {patched} patch target(s).");
+            if (patched == 2)
+            {
+                Log.LogInfo($"{PluginInfo.Name} v{PluginInfo.Version} loaded. Takeoff music patch active.");
+            }
+            else
+            {
+                Log.LogWarning(
+                    $"{PluginInfo.Name} v{PluginInfo.Version} loaded, but only {patched} of 2 methods "
+                    + "were patched. See errors above.");
+            }
+        }
+
+        private void Update()
+        {
+            if (!ModConfig.Enabled.Value || !MusicPlaybackState.IsInitialized)
+            {
+                return;
+            }
+
+            MusicManager manager = MusicManager.i;
+            if (manager != null)
+            {
+                MusicPlaybackState.Refresh(manager, Time.realtimeSinceStartup);
+            }
         }
 
         private void OnDestroy()
