@@ -35,6 +35,7 @@ namespace MusicRandomizer.Patches
                 return true;
             }
 
+            MusicPlaybackState.Register(__instance);
             float now = Time.realtimeSinceStartup;
             if (MusicPlaybackState.Refresh(__instance, now))
             {

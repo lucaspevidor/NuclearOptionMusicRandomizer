@@ -18,30 +18,31 @@ namespace MusicRandomizer
         {
             Log = Logger;
             ModConfig.Init(Config);
+            _harmony.PatchAll(typeof(MusicManagerAwakePatch));
             _harmony.PatchAll(typeof(TakeoffMusicContextPatch));
             _harmony.PatchAll(typeof(TakeoffMusicRequestPatch));
 
             int patched = _harmony.GetPatchedMethods().Count();
-            if (patched == 2)
+            if (patched == 3)
             {
                 Log.LogInfo($"{PluginInfo.Name} v{PluginInfo.Version} loaded. Takeoff music patch active.");
             }
             else
             {
                 Log.LogWarning(
-                    $"{PluginInfo.Name} v{PluginInfo.Version} loaded, but only {patched} of 2 methods "
+                    $"{PluginInfo.Name} v{PluginInfo.Version} loaded, but only {patched} of 3 methods "
                     + "were patched. See errors above.");
             }
         }
 
         private void Update()
         {
-            if (!ModConfig.Enabled.Value || !MusicPlaybackState.IsInitialized)
+            if (!MusicPlaybackState.IsInitialized || GameManager.IsHeadless)
             {
                 return;
             }
 
-            MusicManager manager = MusicManager.i;
+            MusicManager manager = MusicPlaybackState.Manager;
             if (manager != null)
             {
                 MusicPlaybackState.Refresh(manager, Time.realtimeSinceStartup);

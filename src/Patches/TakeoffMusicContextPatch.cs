@@ -22,9 +22,18 @@ namespace MusicRandomizer.Patches
             TakeoffMusicContext.Enter();
         }
 
-        private static Exception Finalizer(Exception __exception)
+        private static void Postfix()
         {
             TakeoffMusicContext.Exit();
+        }
+
+        private static Exception Finalizer(Exception __exception)
+        {
+            if (__exception != null)
+            {
+                TakeoffMusicContext.Exit();
+            }
+
             return __exception;
         }
     }

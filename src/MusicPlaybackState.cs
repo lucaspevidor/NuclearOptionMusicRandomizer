@@ -13,11 +13,18 @@ namespace MusicRandomizer
 
         public static bool IsInitialized { get; private set; }
 
+        public static MusicManager Manager { get; private set; }
+
         public static void Initialize()
         {
             _fadeSource = AccessTools.FieldRefAccess<MusicManager, AudioSource>("fadeSource");
             _isFading = AccessTools.FieldRefAccess<MusicManager, bool>("isFading");
             IsInitialized = true;
+        }
+
+        public static void Register(MusicManager manager)
+        {
+            Manager = manager;
         }
 
         public static bool Refresh(MusicManager manager, float now)
