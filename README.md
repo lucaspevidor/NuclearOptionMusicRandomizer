@@ -22,6 +22,8 @@ A takeoff request is skipped when:
 - The aircraft has no takeoff track.
 
 The cooldown uses Unity's real time, so time spent in a pause menu counts toward it.
+The mod tracks both the music sources and the requested clip duration. The duration acts as a
+fallback while the game's asynchronous crossfade code moves a track between audio sources.
 
 ## Configuration
 

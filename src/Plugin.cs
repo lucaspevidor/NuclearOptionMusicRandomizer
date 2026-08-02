@@ -19,18 +19,20 @@ namespace MusicRandomizer
             Log = Logger;
             ModConfig.Init(Config);
             _harmony.PatchAll(typeof(MusicManagerAwakePatch));
+            _harmony.PatchAll(typeof(MusicPlaybackPatch));
+            _harmony.PatchAll(typeof(MusicStopPatch));
             _harmony.PatchAll(typeof(TakeoffMusicContextPatch));
             _harmony.PatchAll(typeof(TakeoffMusicRequestPatch));
 
             int patched = _harmony.GetPatchedMethods().Count();
-            if (patched == 3)
+            if (patched == 5)
             {
                 Log.LogInfo($"{PluginInfo.Name} v{PluginInfo.Version} loaded. Takeoff music patch active.");
             }
             else
             {
                 Log.LogWarning(
-                    $"{PluginInfo.Name} v{PluginInfo.Version} loaded, but only {patched} of 3 methods "
+                    $"{PluginInfo.Name} v{PluginInfo.Version} loaded, but only {patched} of 5 methods "
                     + "were patched. See errors above.");
             }
         }
