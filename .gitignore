@@ -14,3 +14,6 @@ Thumbs.db
 
 # NuGet
 *.nupkg
+
+# Local working files
+.local/

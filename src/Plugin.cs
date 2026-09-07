@@ -37,7 +37,14 @@ namespace MusicRandomizer
 
         private void Update()
         {
-            if (!MusicPlaybackState.IsInitialized || GameManager.IsHeadless)
+            if (GameManager.IsHeadless)
+            {
+                return;
+            }
+
+            float now = Time.realtimeSinceStartup;
+            TakeoffMusicPool.Discover(now);
+            if (!MusicPlaybackState.IsInitialized)
             {
                 return;
             }
@@ -45,7 +52,7 @@ namespace MusicRandomizer
             MusicManager manager = MusicPlaybackState.Manager;
             if (manager != null)
             {
-                MusicPlaybackState.Refresh(manager, Time.realtimeSinceStartup);
+                MusicPlaybackState.Refresh(manager, now);
             }
         }
 

@@ -6,7 +6,7 @@
     <Product>MusicRandomizer</Product>
     <Description>Replays and optionally randomizes aircraft takeoff music in Nuclear Option.</Description>
     <Authors>Lucas Pevidor</Authors>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <LangVersion>latest</LangVersion>
     <RootNamespace>MusicRandomizer</RootNamespace>
     <AssemblyTitle>MusicRandomizer</AssemblyTitle>
@@ -22,6 +22,10 @@
     <ManagedDirectory>$(GameDirectory)\NuclearOption_Data\Managed</ManagedDirectory>
     <PluginDeploymentDirectory>$(GameDirectory)\BepInEx\plugins\MusicRandomizer</PluginDeploymentDirectory>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- BepInEx 5 framework (bundles HarmonyX / HarmonyLib) -->

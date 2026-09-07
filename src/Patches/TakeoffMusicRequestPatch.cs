@@ -33,13 +33,15 @@ namespace MusicRandomizer.Patches
             ref bool replacePlaying,
             ref float priority)
         {
-            if (!TakeoffMusicContext.IsActive || !ModConfig.Enabled.Value || audioClip == null)
+            if (!TakeoffMusicContext.IsActive || !ModConfig.Enabled.Value || audioClip == null || GameManager.IsHeadless)
             {
                 return true;
             }
 
-            MusicPlaybackState.Register(__instance);
             float now = Time.realtimeSinceStartup;
+            TakeoffMusicPool.Discover(now);
+            TakeoffMusicPool.Register(audioClip, now);
+            MusicPlaybackState.Register(__instance);
             if (MusicPlaybackState.Refresh(__instance, now))
             {
                 Plugin.Log?.LogInfo("Takeoff music skipped because an aircraft song is already playing.");
@@ -54,10 +56,20 @@ namespace MusicRandomizer.Patches
 
             if (ModConfig.RandomizeTakeoffMusic.Value)
             {
-                audioClip = TakeoffMusicPool.PickRandom(audioClip);
+                if (!TakeoffMusicPool.TryPickRandom(out AudioClip selected))
+                {
+                    Plugin.Log?.LogInfo("Takeoff music skipped because no enabled, resolved songs are available.");
+                    return false;
+                }
+
+                audioClip = selected;
+            }
+            else if (!TakeoffMusicPool.IsEnabled(audioClip))
+            {
+                Plugin.Log?.LogInfo("Takeoff music skipped because the assigned song is disabled or its setting is unresolved.");
+                return false;
             }
 
-            TakeoffMusicPool.Register(audioClip);
             allowReplay = true;
             replacePlaying = true;
             if (MusicPlaybackState.IsAnyMusicActive(__instance))
@@ -65,7 +77,7 @@ namespace MusicRandomizer.Patches
                 priority = Mathf.Max(priority, MusicPlaybackState.GetCurrentPriority(__instance));
             }
 
-            Plugin.Log?.LogInfo($"Playing takeoff music '{audioClip.name}'.");
+            Plugin.Log?.LogInfo($"Requesting takeoff music '{ModConfig.GetSongLabel(audioClip.name)}'.");
             return true;
         }
     }
