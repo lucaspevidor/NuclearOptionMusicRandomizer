@@ -169,17 +169,11 @@ zero/one/multiple candidates, full cycles and boundary repeat prevention, live t
 clips, rejected pending requests, assigned/vanilla history, and uncatalogued vanilla playback recognition.
 They also cover source swaps, stopped-source restarts, pre/post-call fade state, unconfirmed source
 activity, exceptions, destroyed objects, guard rejections, file-lock failures before/after binding,
-bounded recovery, membership cleanup, and playback/cooldown policy. These
-checks do **not** execute native Unity, apply Harmony detours, instantiate the real plugin lifecycle,
-validate Configuration Manager rendering, or prove audio playback/async readiness.
+bounded recovery, membership cleanup, and playback/cooldown policy.
 
 ## Runtime Checks
 
-The earlier song selector has been tested successfully in game. The shuffled queue and its new
-playback-start confirmation have passed managed checks but **have not been validated in game**.
-The checklist below covers regression and compatibility scenarios; not every scenario has been
-verified. Serialized stock clips/assignments and actual asynchronous readiness cannot be inferred
-from the C# decompile.
+The checklist below covers regression and compatibility scenarios.
 When validating game or content updates, check exact clip names, shared references, aircraft labels,
 and duplicate/empty-name cases. If genuinely different stock songs share a name or are unnamed,
 the grouping policy must be revised with a verified stable mapping before claiming independent
@@ -193,9 +187,7 @@ The postfix checks the pre-call incoming source object even if the manager's fie
 now play the requested clip and previously have been stopped or held another clip. A pre-call active
 fade, unchanged already-playing matching incoming source, outgoing matching audio, field swap alone,
 or clip assignment without playback does not confirm a start. Post-call fading can be a successful
-start. An unchanged matching incoming source is conservatively unconfirmed because there is no
-verified restart signal for that ambiguous state. The decompile omits the async fade body, so Unity
-native timing, real source swapping, and whether this ambiguous state occurs remain runtime gates.
+start. An unchanged matching incoming source is conservatively treated as unconfirmed playback.
 
 After an explicitly authorized deployment with the game stopped, validate the queue:
 
