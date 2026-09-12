@@ -22,23 +22,90 @@ namespace MusicRandomizer
 
         private static readonly Dictionary<AudioClip, Song> Clips = new Dictionary<AudioClip, Song>();
         private static readonly Dictionary<string, Song> Songs = new Dictionary<string, Song>(StringComparer.Ordinal);
+        private static readonly List<AudioClip> Remaining = new List<AudioClip>();
+        private static AudioClip _lastStarted;
         private static float _nextDiscoveryAt;
         private static float _missingDataRetrySeconds = 1f;
         private static bool _missingDataReported;
 
-        public static bool TryPickRandom(out AudioClip clip)
+        public static bool TrySelectQueued(out AudioClip clip)
         {
-            var candidates = new List<AudioClip>();
-            foreach (var candidate in Clips)
+            bool builtCycle = false;
+            while (true)
             {
-                if (candidate.Key != null && candidate.Value.Entry != null && candidate.Value.Entry.Value)
+                if (Remaining.Count == 0)
                 {
-                    candidates.Add(candidate.Key);
+                    if (builtCycle)
+                    {
+                        clip = null;
+                        return false;
+                    }
+
+                    BuildCycle();
+                    builtCycle = true;
+                }
+
+                while (Remaining.Count > 0)
+                {
+                    if (!IsEnabled(Remaining[0]))
+                    {
+                        Remaining.RemoveAt(0);
+                        continue;
+                    }
+
+                    // Defer a repeat without consuming skipped-looking entries ahead of their turns.
+                    if (_lastStarted != null && Remaining[0] == _lastStarted)
+                    {
+                        for (int index = 1; index < Remaining.Count; index++)
+                        {
+                            if (Remaining[index] != _lastStarted && IsEnabled(Remaining[index]))
+                            {
+                                AudioClip deferred = Remaining[0];
+                                Remaining[0] = Remaining[index];
+                                Remaining[index] = deferred;
+                                break;
+                            }
+                        }
+                    }
+
+                    clip = Remaining[0];
+                    return true;
+                }
+            }
+        }
+
+        public static void ConfirmStarted(AudioClip clip, bool queued)
+        {
+            if (clip == null)
+            {
+                return;
+            }
+
+            if (queued)
+            {
+                Remaining.Remove(clip);
+            }
+
+            _lastStarted = clip;
+        }
+
+        private static void BuildCycle()
+        {
+            foreach (AudioClip clip in Clips.Keys)
+            {
+                if (clip != null)
+                {
+                    Remaining.Add(clip);
                 }
             }
 
-            clip = candidates.Count == 0 ? null : candidates[UnityEngine.Random.Range(0, candidates.Count)];
-            return clip != null;
+            for (int index = Remaining.Count - 1; index > 0; index--)
+            {
+                int other = UnityEngine.Random.Range(0, index + 1);
+                AudioClip clip = Remaining[index];
+                Remaining[index] = Remaining[other];
+                Remaining[other] = clip;
+            }
         }
 
         public static bool Contains(AudioClip clip)
@@ -82,6 +149,12 @@ namespace MusicRandomizer
             foreach (AudioClip clip in destroyed)
             {
                 Clips.Remove(clip);
+            }
+
+            Remaining.RemoveAll(clip => clip == null);
+            if (_lastStarted == null)
+            {
+                _lastStarted = null;
             }
 
             if (MainMenu.State == MainMenu.LoadingState.Loaded)

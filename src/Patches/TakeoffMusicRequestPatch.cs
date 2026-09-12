@@ -6,19 +6,27 @@ namespace MusicRandomizer.Patches
     [HarmonyPatch(typeof(MusicManager), nameof(MusicManager.CrossFadeMusic))]
     internal static class TakeoffMusicRequestPatch
     {
+        private struct RequestState
+        {
+            public bool Observe;
+            public AudioClip QueueCandidate;
+            public MusicPlaybackState.StartSnapshot Snapshot;
+        }
+
         private static bool Prepare()
         {
             bool hasMethod = AccessTools.Method(typeof(MusicManager), nameof(MusicManager.CrossFadeMusic)) != null;
             bool hasCurrentSource = AccessTools.Field(typeof(MusicManager), "currentSource") != null;
             bool hasFadeSource = AccessTools.Field(typeof(MusicManager), "fadeSource") != null;
             bool hasCurrentPriority = AccessTools.Field(typeof(MusicManager), "currentClipPriority") != null;
+            bool hasIsFading = AccessTools.Field(typeof(MusicManager), "isFading") != null;
 
-            if (!hasMethod || !hasCurrentSource || !hasFadeSource || !hasCurrentPriority)
+            if (!hasMethod || !hasCurrentSource || !hasFadeSource || !hasCurrentPriority || !hasIsFading)
             {
                 Plugin.Log?.LogError(
                     $"Incompatible game build: MusicManager.CrossFadeMusic found={hasMethod}, "
                     + $"field 'currentSource' found={hasCurrentSource}, field 'fadeSource' found={hasFadeSource}, "
-                    + $"field 'currentClipPriority' found={hasCurrentPriority}. Patch skipped.");
+                    + $"field 'currentClipPriority' found={hasCurrentPriority}, field 'isFading' found={hasIsFading}. Patch skipped.");
                 return false;
             }
 
@@ -31,10 +39,19 @@ namespace MusicRandomizer.Patches
             ref AudioClip audioClip,
             ref bool allowReplay,
             ref bool replacePlaying,
-            ref float priority)
+            ref float priority,
+            out RequestState __state)
         {
-            if (!TakeoffMusicContext.IsActive || !ModConfig.Enabled.Value || audioClip == null || GameManager.IsHeadless)
+            __state = default;
+            if (!TakeoffMusicContext.IsActive || audioClip == null || GameManager.IsHeadless || __instance == null)
             {
+                return true;
+            }
+
+            if (!ModConfig.Enabled.Value)
+            {
+                __state.Observe = true;
+                __state.Snapshot = MusicPlaybackState.CaptureStart(__instance);
                 return true;
             }
 
@@ -56,13 +73,14 @@ namespace MusicRandomizer.Patches
 
             if (ModConfig.RandomizeTakeoffMusic.Value)
             {
-                if (!TakeoffMusicPool.TryPickRandom(out AudioClip selected))
+                if (!TakeoffMusicPool.TrySelectQueued(out AudioClip selected))
                 {
                     Plugin.Log?.LogInfo("Takeoff music skipped because no enabled, resolved songs are available.");
                     return false;
                 }
 
                 audioClip = selected;
+                __state.QueueCandidate = selected;
             }
             else if (!TakeoffMusicPool.IsEnabled(audioClip))
             {
@@ -78,7 +96,20 @@ namespace MusicRandomizer.Patches
             }
 
             Plugin.Log?.LogInfo($"Requesting takeoff music '{ModConfig.GetSongLabel(audioClip.name)}'.");
+            __state.Observe = true;
+            __state.Snapshot = MusicPlaybackState.CaptureStart(__instance);
             return true;
+        }
+
+        private static void Postfix(MusicManager __instance, AudioClip audioClip, RequestState __state)
+        {
+            if (!__state.Observe || __instance == null || !__state.Snapshot.HasStarted(audioClip))
+            {
+                return;
+            }
+
+            TakeoffMusicPool.ConfirmStarted(audioClip, __state.QueueCandidate != null && __state.QueueCandidate == audioClip);
+            MusicPlaybackState.ObserveStarted(__instance, __state.Snapshot, audioClip, Time.realtimeSinceStartup);
         }
     }
 }

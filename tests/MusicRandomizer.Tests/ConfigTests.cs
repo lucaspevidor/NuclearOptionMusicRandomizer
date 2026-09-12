@@ -108,8 +108,9 @@ namespace MusicRandomizer.Tests
 
                 Equal(1, Plugin.Warnings.Count, "New names and scans cannot bypass global bind backoff");
                 Check(TakeoffMusicPool.IsEnabled(current), "Already-resolved entries remain usable during I/O failures");
-                Check(TakeoffMusicPool.TryPickRandom(out var candidate) && candidate == current, "Random selection must exclude all unresolved clips");
-                Equal(1, UnityEngine.Random.LastMaximum, "Exactly one resolved candidate during partial initialization");
+                Check(TakeoffMusicPool.TrySelectQueued(out var candidate) && candidate == current, "Queued selection must exclude all unresolved clips");
+                TakeoffMusicPool.ConfirmStarted(candidate, true);
+                Check(TakeoffMusicPool.TrySelectQueued(out candidate) && candidate == current, "Unresolved turns are skipped before the sole eligible song repeats");
                 TakeoffMusicPool.Register(unresolved, 31f);
                 Equal(2, Plugin.Warnings.Count, "One bounded retry while still locked");
             }
@@ -141,7 +142,7 @@ namespace MusicRandomizer.Tests
                 TakeoffMusicPool.Register(clip, 0f);
                 Check(SongEntry(config, clip.name).Value, "BepInEx retained the partially bound entry");
                 Check(TakeoffMusicPool.Contains(clip) && !TakeoffMusicPool.IsEnabled(clip), "Partially bound true is still unresolved");
-                Check(!TakeoffMusicPool.TryPickRandom(out _), "No fallback to partially bound true");
+                Check(!TakeoffMusicPool.TrySelectQueued(out _), "No fallback to partially bound true");
                 TakeoffMusicPool.Register(clip, 30f);
                 Equal(2, Plugin.Warnings.Count, "Retry must attempt the failed save, not just return the cached entry");
                 Check(!TakeoffMusicPool.IsEnabled(clip), "Still ineligible after another failed save");
