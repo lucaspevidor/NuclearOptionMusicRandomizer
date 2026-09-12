@@ -128,7 +128,15 @@ internal sealed class MusicManager : UnityEngine.Object
     public UnityEngine.AudioSource fadeSource = new UnityEngine.AudioSource();
     public float currentClipPriority;
     public bool isFading;
-    public void CrossFadeMusic() => throw new NotSupportedException("No native playback in managed tests");
+    public Action<MusicManager, UnityEngine.AudioClip> Outcome;
+    public (float FadeOut, float FadeIn, bool Repeat, bool Replay, bool Replace, float Priority) LastRequest;
+
+    public void CrossFadeMusic(UnityEngine.AudioClip clip, float fadeOutTime, float fadeInTime,
+        bool repeat, bool allowReplay, bool replacePlaying, float priority)
+    {
+        LastRequest = (fadeOutTime, fadeInTime, repeat, allowReplay, replacePlaying, priority);
+        Outcome?.Invoke(this, clip);
+    }
 }
 
 namespace MusicRandomizer

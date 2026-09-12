@@ -249,7 +249,13 @@ namespace MusicRandomizer.Tests
                     .Invoke(null, arguments);
                 // Outcomes model the game's result independently of production confirmation logic.
                 // No outcome means a rejected/no-start original call. Postfix also runs on suppression.
-                if (allowed) outcome?.Invoke(manager, (AudioClip)arguments[1]);
+                if (allowed)
+                {
+                    manager.Outcome = outcome;
+                    // Unpatched parameters use the aircraft's actual 2s fade-out, 0s fade-in, no loop.
+                    manager.CrossFadeMusic((AudioClip)arguments[1], 2f, 0f, false,
+                        (bool)arguments[2], (bool)arguments[3], (float)arguments[4]);
+                }
                 typeof(TakeoffMusicRequestPatch).GetMethod("Postfix", BindingFlags.Static | BindingFlags.NonPublic)
                     .Invoke(null, new[] { manager, arguments[1], arguments[5] });
                 return (allowed, (AudioClip)arguments[1], (bool)arguments[2], (bool)arguments[3], (float)arguments[4]);

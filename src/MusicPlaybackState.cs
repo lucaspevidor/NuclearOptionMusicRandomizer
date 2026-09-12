@@ -85,13 +85,23 @@ namespace MusicRandomizer
 
         private static void PruneConfirmedSources()
         {
-            var expired = new List<AudioSource>();
+            List<AudioSource> expired = null;
             foreach (var source in ConfirmedSources)
             {
                 if (!IsPlaying(source.Key) || source.Value == null || source.Key.clip != source.Value)
                 {
+                    if (expired == null)
+                    {
+                        expired = new List<AudioSource>();
+                    }
+
                     expired.Add(source.Key);
                 }
+            }
+
+            if (expired == null)
+            {
+                return;
             }
 
             foreach (AudioSource source in expired)
