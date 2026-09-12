@@ -4,6 +4,6 @@ namespace MusicRandomizer
     {
         public const string Guid = "com.lucaspevidor.musicrandomizer";
         public const string Name = "MusicRandomizer";
-        public const string Version = "0.3.0";
+        public const string Version = "0.4.0";
     }
 }
