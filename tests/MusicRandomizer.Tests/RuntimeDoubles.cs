@@ -40,8 +40,18 @@ namespace UnityEngine
 
     internal sealed class AudioSource : Object
     {
-        public AudioClip clip;
-        public bool isPlaying;
+        private AudioClip _clip;
+        private bool _isPlaying;
+        public AudioClip clip
+        {
+            get { RequireAlive(); return _clip; }
+            set { RequireAlive(); _clip = value; }
+        }
+        public bool isPlaying
+        {
+            get { RequireAlive(); return _isPlaying; }
+            set { RequireAlive(); _isPlaying = value; }
+        }
     }
 
     internal static class Time
@@ -57,7 +67,7 @@ namespace UnityEngine
 
     internal static class Random
     {
-        public static int NextIndex;
+        public static readonly Queue<int> Choices = new Queue<int>();
         public static int Calls;
         public static int LastMaximum;
 
@@ -65,8 +75,9 @@ namespace UnityEngine
         {
             Calls++;
             LastMaximum = maximum;
-            if (NextIndex < minimum || NextIndex >= maximum) throw new InvalidOperationException("Invalid test random index");
-            return NextIndex;
+            int index = Choices.Count == 0 ? maximum - 1 : Choices.Dequeue();
+            if (index < minimum || index >= maximum) throw new InvalidOperationException("Invalid test random index");
+            return index;
         }
     }
 }
@@ -111,12 +122,21 @@ internal static class GameManager
     public static bool IsHeadless;
 }
 
-internal sealed class MusicManager
+internal sealed class MusicManager : UnityEngine.Object
 {
     public UnityEngine.AudioSource currentSource = new UnityEngine.AudioSource();
     public UnityEngine.AudioSource fadeSource = new UnityEngine.AudioSource();
     public float currentClipPriority;
-    public void CrossFadeMusic() => throw new NotSupportedException("No native playback in managed tests");
+    public bool isFading;
+    public Action<MusicManager, UnityEngine.AudioClip> Outcome;
+    public (float FadeOut, float FadeIn, bool Repeat, bool Replay, bool Replace, float Priority) LastRequest;
+
+    public void CrossFadeMusic(UnityEngine.AudioClip clip, float fadeOutTime, float fadeInTime,
+        bool repeat, bool allowReplay, bool replacePlaying, float priority)
+    {
+        LastRequest = (fadeOutTime, fadeInTime, repeat, allowReplay, replacePlaying, priority);
+        Outcome?.Invoke(this, clip);
+    }
 }
 
 namespace MusicRandomizer

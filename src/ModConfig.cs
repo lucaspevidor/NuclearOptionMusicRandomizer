@@ -34,7 +34,9 @@ namespace MusicRandomizer
                 "General",
                 "RandomizeTakeoffMusic",
                 true,
-                "Choose each takeoff track from enabled aircraft songs. Disable this to use the current aircraft's track, or skip it if unchecked.");
+                "Play enabled aircraft songs in shuffled cycles, consuming a turn only when playback starts. "
+                + "Avoid repeating the last started takeoff song when a different eligible turn remains. "
+                + "Disable this to use the current aircraft's track, or skip it if unchecked; queue progress is retained.");
 
             CooldownSeconds = config.Bind(
                 "Timing",

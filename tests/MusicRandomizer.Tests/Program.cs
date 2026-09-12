@@ -21,7 +21,20 @@ namespace MusicRandomizer.Tests
             (nameof(SelectorTests.DestroyedAndRecreatedClips), SelectorTests.DestroyedAndRecreatedClips),
             (nameof(SelectorTests.RequestModesAndGuards), SelectorTests.RequestModesAndGuards),
             (nameof(SelectorTests.PlaybackProtectionAndCooldown), SelectorTests.PlaybackProtectionAndCooldown),
-            (nameof(SelectorTests.OriginalRegisteredBeforeObservation), SelectorTests.OriginalRegisteredBeforeObservation)
+            (nameof(SelectorTests.OriginalRegisteredBeforeObservation), SelectorTests.OriginalRegisteredBeforeObservation),
+            (nameof(QueueTests.StableCycles), QueueTests.StableCycles),
+            (nameof(QueueTests.DisabledHeadsExample), QueueTests.DisabledHeadsExample),
+            (nameof(QueueTests.LiveTurnsAndDeferral), QueueTests.LiveTurnsAndDeferral),
+            (nameof(QueueTests.LookaheadPreservesTurns), QueueTests.LookaheadPreservesTurns),
+            (nameof(QueueTests.BoundedEmptyCycles), QueueTests.BoundedEmptyCycles),
+            (nameof(QueueTests.UnresolvedCycle), QueueTests.UnresolvedCycle),
+            (nameof(QueueTests.QueueLifecycle), QueueTests.QueueLifecycle),
+            (nameof(PlaybackStartTests.QueuedStartsAndRejections), PlaybackStartTests.QueuedStartsAndRejections),
+            (nameof(PlaybackStartTests.SourceConfirmationBoundaries), PlaybackStartTests.SourceConfirmationBoundaries),
+            (nameof(PlaybackStartTests.VanillaGameRejections), PlaybackStartTests.VanillaGameRejections),
+            (nameof(PlaybackStartTests.ModeHistoryAndQueueProgress), PlaybackStartTests.ModeHistoryAndQueueProgress),
+            (nameof(PlaybackStartTests.UncataloguedVanillaRecognition), PlaybackStartTests.UncataloguedVanillaRecognition),
+            (nameof(PlaybackStartTests.GuardsDoNotAdvanceQueue), PlaybackStartTests.GuardsDoNotAdvanceQueue)
         };
 
         private static int Main(string[] args)

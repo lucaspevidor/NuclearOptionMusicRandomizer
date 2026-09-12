@@ -6,7 +6,7 @@
     <Product>MusicRandomizer</Product>
     <Description>Replays and optionally randomizes aircraft takeoff music in Nuclear Option.</Description>
     <Authors>Lucas Pevidor</Authors>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <LangVersion>latest</LangVersion>
     <RootNamespace>MusicRandomizer</RootNamespace>
     <AssemblyTitle>MusicRandomizer</AssemblyTitle>

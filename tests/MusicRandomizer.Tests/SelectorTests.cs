@@ -17,7 +17,7 @@ namespace MusicRandomizer.Tests
         public static void CandidateBoundariesAndGroups(string directory)
         {
             var config = InitConfig(directory);
-            Check(!TakeoffMusicPool.TryPickRandom(out var empty) && empty == null, "Empty catalog must fail explicitly");
+            Check(!TakeoffMusicPool.TrySelectQueued(out var empty) && empty == null, "Empty catalog must fail explicitly");
             Equal(0, Random.Calls, "Empty selection must not draw a random index");
             var shared = new AudioClip { name = "Shared" };
             var duplicate = new AudioClip { name = "Shared" };
@@ -31,24 +31,23 @@ namespace MusicRandomizer.Tests
             var actual = new HashSet<AudioClip>();
             for (int index = 0; index < 3; index++)
             {
-                Random.NextIndex = index;
-                Check(TakeoffMusicPool.TryPickRandom(out var selected), "All-enabled selection");
-                Equal(3, Random.LastMaximum, "Shared references must not add selection weight");
+                Check(TakeoffMusicPool.TrySelectQueued(out var selected), "All-enabled selection");
                 actual.Add(selected);
+                TakeoffMusicPool.ConfirmStarted(selected, true);
             }
             Check(actual.SetEquals(new[] { shared, duplicate, other }), "Enumerate every candidate deterministically");
+            Equal(2, Random.Calls, "Three unique objects require two Fisher-Yates draws per cycle");
 
             SongEntry(config, "Shared").Value = false;
-            Random.NextIndex = 0;
             Check(!TakeoffMusicPool.IsEnabled(shared) && !TakeoffMusicPool.IsEnabled(duplicate), "Group exclusion covers every member");
             for (int attempt = 0; attempt < 2; attempt++)
             {
-                Check(TakeoffMusicPool.TryPickRandom(out var selected) && selected == other, "One enabled clip may replay");
-                Equal(1, Random.LastMaximum, "Disabled group absent from candidate set");
+                Check(TakeoffMusicPool.TrySelectQueued(out var selected) && selected == other, "One enabled clip may replay");
+                TakeoffMusicPool.ConfirmStarted(selected, true);
             }
             Check(TakeoffMusicPool.Contains(shared), "Disabled song remains recognizable");
             SongEntry(config, "Other").Value = false;
-            Check(!TakeoffMusicPool.TryPickRandom(out _), "All-off must not fall back");
+            Check(!TakeoffMusicPool.TrySelectQueued(out _), "All-off must not fall back");
 
             var late = new AudioClip { name = "Shared" };
             TakeoffMusicPool.Register(late, 1f);
@@ -238,15 +237,27 @@ namespace MusicRandomizer.Tests
         }
 
         internal static (bool Allowed, AudioClip Clip, bool Replay, bool Replace, float Priority) Request(
-            MusicManager manager, AudioClip original, float now, bool takeoff = true)
+            MusicManager manager, AudioClip original, float now, bool takeoff = true,
+            Action<MusicManager, AudioClip> outcome = null, bool aircraftArguments = false)
         {
             Time.realtimeSinceStartup = now;
             if (takeoff) TakeoffMusicContext.Enter();
             try
             {
-                object[] arguments = { manager, original, false, false, 2f };
+                object[] arguments = { manager, original, false, aircraftArguments, aircraftArguments ? 0f : 2f, null };
                 bool allowed = (bool)typeof(TakeoffMusicRequestPatch).GetMethod("Prefix", BindingFlags.Static | BindingFlags.NonPublic)
                     .Invoke(null, arguments);
+                // Outcomes model the game's result independently of production confirmation logic.
+                // No outcome means a rejected/no-start original call. Postfix also runs on suppression.
+                if (allowed)
+                {
+                    manager.Outcome = outcome;
+                    // Unpatched parameters use the aircraft's actual 2s fade-out, 0s fade-in, no loop.
+                    manager.CrossFadeMusic((AudioClip)arguments[1], 2f, 0f, false,
+                        (bool)arguments[2], (bool)arguments[3], (float)arguments[4]);
+                }
+                typeof(TakeoffMusicRequestPatch).GetMethod("Postfix", BindingFlags.Static | BindingFlags.NonPublic)
+                    .Invoke(null, new[] { manager, arguments[1], arguments[5] });
                 return (allowed, (AudioClip)arguments[1], (bool)arguments[2], (bool)arguments[3], (float)arguments[4]);
             }
             finally
